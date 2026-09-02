@@ -5,6 +5,10 @@
   "description": "An agent + human image easel — a Fabric.js canvas you and your AI agent edit together over WebMCP.",
   "license": "MIT",
   "homepage": "https://speakeasel.netlify.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gjtorikian/speakeasel.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

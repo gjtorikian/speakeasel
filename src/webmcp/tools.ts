@@ -76,7 +76,12 @@ function emitState(s: SceneState) {
   };
 }
 
-function summarize(s: SceneState): string {
+/**
+ * One-line state summary. Also the source of the canvas element's aria-label
+ * (main.ts subscribes and re-sets it on every scene change) — the same text
+ * an agent reads is the text a screen reader hears. Fabric-free on purpose.
+ */
+export function summarize(s: SceneState): string {
   const parts: string[] = [
     s.image ? `'${s.image.name}' ${s.image.width}×${s.image.height}` : 'no image',
   ];

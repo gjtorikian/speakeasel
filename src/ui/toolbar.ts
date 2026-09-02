@@ -3,9 +3,12 @@ import { scene } from '../scene/scene';
 import { ADJUSTMENT_LIMIT, ADJUSTMENTS, ASPECTS, type SceneState } from '../types';
 
 // ---------------------------------------------------------------------------
-// Toolbar: real <button>/<input> controls for every scene mutator (semantic
-// HTML now; the full ARIA pass lands in Phase 4). Pure UI — reads and writes
-// scene state only; the one renderer touch is loadImageFile for uploads.
+// Toolbar: real <button>/<input> controls for every scene mutator. Pure UI —
+// reads and writes scene state only; the one renderer touch is loadImageFile
+// for uploads. Keyboard model: natural tab order (no roving tabindex — three
+// of the children are range inputs whose arrow keys must keep adjusting the
+// value); native <button>s handle Enter/Space; scene errors surface in the
+// #editor-message live region.
 // ---------------------------------------------------------------------------
 
 let cleanup: (() => void) | null = null;
@@ -123,6 +126,14 @@ export function initToolbar(mount: HTMLElement): void {
   );
 
   const sync = (s: SceneState): void => {
+    // Disabling the focused button would silently drop keyboard focus to
+    // <body> (a trap in effect: repeated Undo presses exhaust the history and
+    // strand the user). Hand focus to a live neighbor first.
+    if (document.activeElement === undoBtn && !s.canUndo) {
+      (s.canRedo ? redoBtn : exportBtn).focus();
+    } else if (document.activeElement === redoBtn && !s.canRedo) {
+      (s.canUndo ? undoBtn : exportBtn).focus();
+    }
     undoBtn.disabled = !s.canUndo;
     redoBtn.disabled = !s.canRedo;
     for (const kind of ADJUSTMENTS) {

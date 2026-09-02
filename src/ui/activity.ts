@@ -40,25 +40,41 @@ export function mountActivity(mount: HTMLElement): ActivityFeed {
     const item = document.createElement('li');
     item.className = `activity-entry ${entry.ok ? 'ok' : 'failed'}`;
 
+    // The aria-live region announces each prepended entry. Only the tool name
+    // and the human-readable summary line should be spoken — the ✓/✗ glyph,
+    // the raw args JSON, and the timestamp are visual-only (aria-hidden), so
+    // the feed narrates "set_adjustment Set brightness to +40." instead of
+    // reading JSON aloud.
     const status = document.createElement('span');
     status.className = 'activity-status';
     status.textContent = entry.ok ? '✓' : '✗';
+    status.setAttribute('aria-hidden', 'true');
 
     const tool = document.createElement('span');
     tool.className = 'activity-tool';
     tool.textContent = entry.tool;
 
-    const args = document.createElement('span');
-    args.className = 'activity-args';
-    args.textContent = compactArgs(entry.args);
+    const summary = document.createElement('span');
+    summary.className = 'activity-summary';
+    summary.textContent = entry.ok ? entry.summary : `Error: ${entry.summary}`;
 
     const time = document.createElement('time');
     time.className = 'activity-time';
     time.dateTime = entry.at.toISOString();
     time.textContent = entry.at.toLocaleTimeString();
+    time.setAttribute('aria-hidden', 'true');
 
     item.title = entry.summary;
-    item.append(status, tool, args, time);
+    item.append(status, tool, summary, time);
+
+    const compact = compactArgs(entry.args);
+    if (compact !== '') {
+      const args = document.createElement('span');
+      args.className = 'activity-args';
+      args.textContent = compact;
+      args.setAttribute('aria-hidden', 'true');
+      item.append(args);
+    }
 
     list.prepend(item);
     while (list.children.length > MAX_ENTRIES) list.lastElementChild!.remove();

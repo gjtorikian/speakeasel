@@ -6,7 +6,7 @@ import { mountActivity } from './ui/activity';
 import { initObjectList } from './ui/objectlist';
 import { initToolbar } from './ui/toolbar';
 import { getModelContext } from './webmcp/adapter';
-import { registerAll } from './webmcp/tools';
+import { registerAll, summarize } from './webmcp/tools';
 
 // --- Boot: scene → renderer → UI first — the page works with or without WebMCP ---
 
@@ -19,6 +19,19 @@ registerSampleSource(() => ({
 
 const easel = document.querySelector<HTMLCanvasElement>('#easel')!;
 renderer.init(easel);
+
+// a11y: keep the canvas's aria-label in sync from the SAME summarizer
+// describe_canvas builds on (one source of truth) — wired after renderer.init
+// so the element Fabric leaves in place (the labeled lower canvas) is the one
+// updated. Fabric's added .upper-canvas is pointer-only; hide it from the
+// accessibility tree so screen readers land on the labeled element instead.
+const syncCanvasLabel = (): void => {
+  easel.setAttribute('aria-label', `Canvas: ${summarize(scene.getState())}`);
+};
+scene.subscribe(syncCanvasLabel);
+syncCanvasLabel();
+document.querySelector('.upper-canvas')?.setAttribute('aria-hidden', 'true');
+
 initToolbar(document.querySelector<HTMLElement>('#toolbar')!);
 initObjectList(document.querySelector<HTMLElement>('#object-list')!);
 const activity = mountActivity(document.querySelector<HTMLElement>('#activity')!);

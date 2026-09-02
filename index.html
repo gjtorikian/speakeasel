@@ -17,22 +17,27 @@
       content="A canvas image editor you and your AI agent operate together over WebMCP."
     />
     <meta property="og:url" content="https://speakeasel.netlify.app/" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://speakeasel.netlify.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Speakeasel — an agent + human image easel" />
     <meta
       name="twitter:description"
       content="A canvas image editor you and your AI agent operate together over WebMCP."
     />
+    <meta name="twitter:image" content="https://speakeasel.netlify.app/og.png" />
   </head>
   <body>
+    <a class="skip-link" href="#toolbar">Skip to toolbar</a>
     <div id="app">
       <h1>Speakeasel</h1>
       <p class="tagline">Agent + human image easel.</p>
       <p id="webmcp-banner" hidden>WebMCP not available in this browser.</p>
       <p id="editor-message" role="status" aria-live="polite" hidden></p>
       <input id="file-input" type="file" accept="image/*" aria-label="Upload image" hidden />
-      <section id="toolbar" role="toolbar" aria-label="editing toolbar"></section>
-      <canvas id="easel" width="800" height="600"></canvas>
+      <section id="toolbar" role="toolbar" aria-label="editing toolbar" tabindex="-1"></section>
+      <canvas id="easel" width="800" height="600" role="img" aria-label="Canvas: no image"></canvas>
       <section id="object-list" aria-label="scene objects"></section>
       <section id="activity" aria-label="agent tool-call activity"></section>
     </div>
