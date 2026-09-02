@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  Implementation-notes shell — copied VERBATIM by execute-spec on the first logged entry.
+  This file is the single owner of the implementation-notes format. Do not restate its
+  structure or styles elsewhere; change the format here and every future phase inherits it.
+  Copier substitutes: {N} (phase number, twice), {PROJECT}, {DATE}, {PHASE DESCRIPTION} —
+  then deletes the example entry and appends real ones inside <main class="doc-content">.
+-->
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Implementation Notes — Phase 3</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f3;
+        --fg: #191b1d;
+        --muted: #50555a;
+        --border: #dededf;
+        --accent: #2b46c7;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #131417;
+          --fg: #e9e9e4;
+          --muted: #a8aaa6;
+          --border: #2d3036;
+          --accent: #93a7ff;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0 auto;
+        max-width: 46rem;
+        padding: 2rem 1.25rem 4rem;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .doc-header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem; }
+      .doc-header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+      .doc-meta { margin: 0; color: var(--muted); font-size: 0.875rem; }
+      .note-entry { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+      .note-entry h3 { margin: 0 0 0.75rem; font-size: 1.05rem; color: var(--accent); }
+      .note-entry dl { margin: 0; }
+      .note-entry dt { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.75rem; }
+      .note-entry dt:first-child { margin-top: 0; }
+      .note-entry dd { margin: 0.15rem 0 0; }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.9em;
+        background: color-mix(in srgb, var(--fg) 8%, transparent);
+        padding: 0.1em 0.3em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc-header">
+      <h1>Implementation Notes — Phase 3</h1>
+      <p class="doc-meta">speakeasel · 2026-09-02 · Tool Surface: 14+ WebMCP tools over the frozen scene layer, activity feed, contract-pinned suite</p>
+    </header>
+    <main class="doc-content">
+      <section class="note-entry">
+        <h3>adapter.ts — optional <code>annotations</code> field added (scope addition)</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec wants <code>annotations: { readOnlyHint: true }</code> on <code>get_canvas_state</code> and <code>describe_canvas</code>, but <code>ToolDef</code> in <code>src/webmcp/adapter.ts</code> had no such field and adapter.ts is not in the spec's Modified Files list.</dd>
+          <dt>Decision</dt>
+          <dd>Added one backward-compatible optional field <code>annotations?: Record&lt;string, unknown&gt;</code> to <code>ToolDef</code> — the route the scout's context map explicitly blessed as "a defensible scope addition". <code>registerAll</code> registers try-with-annotations and, on a throw, re-registers the def without the field (safe: the failed attempt never landed).</dd>
+          <dt>Alternative</dt>
+          <dd>An <code>as any</code> cast local to tools.ts — rejected as it hides the field from the shim/test surface and from any future consumer of <code>ToolDef</code>.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>tools.ts — surface is 15 tools, not 14</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec's tool table has 14 rows with <code>undo / redo</code> sharing one row, then says "(14 total counting undo and redo separately)" — arithmetically that makes 15 distinct tools.</dd>
+          <dt>Decision</dt>
+          <dd>Implemented every named tool in the table: 13 single-row tools + undo + redo = 15 registered tools. The contract criterion (<code>tools.size &gt;= 14</code>, both read tools pinned by name) is satisfied either way; dropping a named tool to hit exactly 14 would violate the table.</dd>
+          <dt>Alternative</dt>
+          <dd>Merging undo/redo into one tool with a direction argument — rejected: the spec's decision log requires <code>undo</code> always registered as its own tool ("static undo in MVP").</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>index.html — listed as modified, needed zero changes</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec's Modified Files table lists <code>index.html</code> ("Activity feed mount"), but <code>&lt;section id="activity"&gt;</code> already exists at line 37 — it landed in Phase 2's markup pass, exactly as the scout's context map flagged.</dd>
+          <dt>Decision</dt>
+          <dd>No edit made; <code>main.ts</code> mounts the feed on the existing section. Adding a second mount would duplicate the DOM id.</dd>
+          <dt>Alternative</dt>
+          <dd>None viable — a duplicate section would break the <code>querySelector</code> contract.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>undo/redo — "Undid: …" phrased as summary restatement, no label stack</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec's tool table sketches the undo response as <code>"Undid: …" from history</code>, but the frozen scene layer keeps unlabeled snapshots — there is no per-entry description to quote, and adding one would modify <code>scene.ts</code> (explicitly not in this phase's file set).</dd>
+          <dt>Decision</dt>
+          <dd>The tool returns <code>Undid the last edit. Now: {one-line state summary}</code> — honoring the spec's "response texts always restate the resulting state fragment" rule without touching the frozen store. Empty history returns exactly <code>Nothing to undo yet.</code> as specified.</dd>
+          <dt>Alternative</dt>
+          <dd>A parallel label stack inside tools.ts mirroring scene history — rejected: it would desync from renderer/toolbar-originated mutations that never pass through the tool layer.</dd>
+        </dl>
+      </section>
+    </main>
+  </body>
+</html>

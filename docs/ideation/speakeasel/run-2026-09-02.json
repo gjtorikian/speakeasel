@@ -1,0 +1,92 @@
+{
+  "projectName": "Speakeasel",
+  "slug": "speakeasel",
+  "date": "2026-09-02",
+  "branch": "ideation/speakeasel",
+  "baseBranch": "main",
+  "strict": true,
+  "summary": {
+    "completed": [
+      "Walking skeleton",
+      "The editor",
+      "Tool surface",
+      "Polish and ship"
+    ],
+    "noops": [],
+    "failed": [],
+    "skipped": [],
+    "results": [
+      {
+        "title": "Walking skeleton",
+        "result": "PASS",
+        "reviewStatus": "passed",
+        "commitHash": "8c7f7658cff22047da64ab67d36819e379839343",
+        "summary": "Built the Phase 1 walking skeleton: Vite+TS scaffold, Fabric.js 7.4.0 sample scene (gradient sky, sun, hills, title) on a static <canvas id=\"easel\">, dual-surface WebMCP adapter copied from Loopmate with an HMR-guarded describe_page tool registered in main.ts, and a successful REST deploy to https://speakeasel.netlify.app (deploy 6a987802448c07a9697bac36). All spec validation commands pass: npm run build exits 0, grep finds a real mc.registerTool( call at src/main.ts:29, ./scripts/deploy.sh exits 0, and the live URL serves the <canvas> element. One environment surprise logged to implementation notes: fsevents' optional node-gyp build hung on a pyenv python shim and was killed; npm install still completed exit 0 (fsevents is optional, build/deploy unaffected). — High-fidelity implementation of the Phase 1 walking skeleton: every file in the spec's File Changes table is present, the WebMCP adapter is a verbatim Loopmate copy, main.ts and index.html closely follow the referenced Loopmate patterns (boot order, banner fallback, HMR guard, try/catch registration), and the Fabric v7 sample scene matches the spec's step 2 exactly. Only three low-severity nits (a misleading comment, dead-code try/catch, and two unregistered docs artifacts) — none block. Ready to commit once the manual validations (npm run build, deploy, live curl for <canvas, Inspector invocation of describe_page) are confirmed green, since those cannot be verified from the diff alone.",
+        "findings": [
+          "low/logic src/main.ts:13 — HMR-guard comment claims 'Vite HMR re-runs main.ts; a repeat run registers 0 tools', but a module re-execution resets the module-level flag, so the guard cannot do that; Loopmate's own comment (tools.ts:326) correctly says Vite full-reloads main.ts and the guard is belt-and-braces → Reword the comment to match Loopmate's accurate framing so it doesn't imply protection the flag doesn't provide",
+          "low/logic src/main.ts:34 — try/catch inside describe_page wraps a pure static-string return, so the catch branch is unreachable dead code in this tool → Either drop the try/catch for the hello tool or keep it with a comment noting it's the template for Phase 3 tools that can actually throw",
+          "low/spec-deviation docs/ideation/speakeasel/implementation-notes-phase-1.html:1 — Untracked files implementation-notes-phase-1.html and context-map.md are not in the spec's File Changes table and were not registered with git add -N, so they sit outside the reviewed diff → Confirm they are intentional ideation-workflow artifacts and either commit them deliberately or delete them"
+        ],
+        "warnings": [],
+        "reviewCycles": 1
+      },
+      {
+        "title": "The editor",
+        "result": "PASS",
+        "reviewStatus": "passed",
+        "commitHash": "a8e5c9fe0a1110bdfb5aa648da5dc976b78adb6f",
+        "summary": "Built Phase 2 (The Editor): a Fabric-free scene store with snapshot history/undo-redo and drag coalescing, a Fabric renderer projecting image/filters/crop/rotation/texts with reverse drag sync, upload/drop with downscaling and PNG export, toolbar + object-list UI, and a 39-test scene suite. All validation commands pass (tsc, vitest 39/39, vite build); changes left unstaged with new files registered via git add -N. — High-quality implementation: the scene store reproduces the loopmate store pattern faithfully (commit/notify, dev deep-freeze, clamp/throw rule) while adding the spec's history ring correctly, the renderer mirrors engine.ts's subscriber-projection shape, and the 366-line test suite covers every key case the spec names, including coalescing and dataURL reference sharing. The two spec gaps (exportRequests in state, drag-coalescing mechanism) were resolved additively and documented in implementation notes without breaking the frozen mutator contract. One medium logic issue — the suppressed final echo lets an off-canvas drag leave the Fabric object out of sync with clamped scene state — plus four low findings; nothing blocks, ready to commit.",
+        "findings": [
+          "medium/logic src/render/renderer.ts:566 — syncObjectPosition suppresses the echo render on the final object:modified sync, so a caption dragged past the canvas edge is clamped to 0..100 in scene state while the Fabric object rests at its unclamped position; canvas and object list disagree until an unrelated mutation re-projects (the spec's 'UI lies about state' failure mode via drags) → After scene.endGesture() on release, do not suppress the echo (or explicitly call project(scene.getState())) so the object snaps to the clamped state position",
+          "low/spec-deviation src/render/renderer.ts:424 — Spec implementation step 1 says 'crop via viewport transform + canvas dimensions'; implementation keeps viewport identity and computes crop in display space (canvas resized to crop aspect, image scaled/offset). Behaviorally equivalent and documented in implementation-notes-phase-2.html → Keep; ensure Phase 3's describe_canvas coordinate math is written against the display-space model, not viewport transforms",
+          "low/logic src/render/renderer.ts:424 — layout() ignores rotation when sizing the canvas: rotate 90° with no crop clips the image's ends and leaves blank side bars, and export at that rotation bakes in the clipping (spec only mandates 'canvas-level rotate of the image object', so this conforms, but the UX is surprising) → Consider swapping canvas dimensions at 90/270 or fitting the rotated bounding box; at minimum note the behavior for Phase 3's describe_canvas",
+          "low/pattern-mismatch src/ui/toolbar.ts:showStatus — showStatus duplicates renderer.ts's showMessage (both query and toggle #editor-message with identical logic) → Extract one shared status helper (e.g. src/ui/status.ts) so the message element has a single writer",
+          "low/spec-deviation src/vite-env.d.ts:1 — New file not listed in the spec's File Changes table (a one-line vite/client type shim needed for import.meta.env typing in scene.ts) → Acceptable support shim; add a one-line entry to the implementation notes so the file inventory stays auditable"
+        ],
+        "warnings": [],
+        "reviewCycles": 1
+      },
+      {
+        "title": "Tool surface",
+        "result": "PASS",
+        "reviewStatus": "passed",
+        "commitHash": "48004cc904f79952e2969e3a8fc933946be6cba0",
+        "summary": "Implemented the Phase 3 tool surface: 15 WebMCP tools (get_canvas_state, describe_canvas, load_sample_image, set_adjustment, crop, clear_crop, rotate, add_text, edit_text, move_object, remove_object, undo, redo, export_png, reset_canvas) over the frozen scene layer with the Loopmate dispatch wrapper (throw-to-text, best-effort activity feed, post-loop HMR flag fix, annotations try/catch fallback), the bounded activity feed UI, and the contract-pinned suite (34 tests). All 5 validation commands pass (tsc, tool-surface suite, full 73-test suite, build, registerTool grep); changes left unstaged with new files registered via git add -N for the sibling reviewer. — High-quality implementation: all 15 spec-listed tools are registered through a dispatch wrapper faithful to the Loopmate pattern (with the required post-loop HMR-flag fix and the annotations try/catch fallback), the contract-pinned suite assertions are all present and unweakened, describe_canvas narrates from the same getState() the JSON tool reads, and the dataURL never leaks. index.html needed no change since the #activity mount was already committed in Phase 2. Zero blocking findings — ready to commit; the one medium (crop's 'Requires an image' claim unenforced on the rect path) and three lows are worth a fast follow.",
+        "findings": [
+          "medium/logic src/webmcp/tools.ts:189 — crop tool description claims 'Requires an image' but only the aspect path enforces it; the rect path calls scene.cropRect() which never checks state.image, so crop {rect} on an empty canvas succeeds with a misleading 'Cropped to …' message and sets crop state that describe_canvas won't narrate → In the crop handler, throw the same 'No image loaded' error before scene.cropRect() when state.image is null (or soften the description to match actual behavior)",
+          "low/pattern-mismatch src/webmcp/tools.ts:237 — add_text and edit_text descriptions hardcode '8-200' and default 32 while schemas.ts derives the same values from TEXT_SIZE_MIN/TEXT_SIZE_MAX/template literals → Interpolate TEXT_SIZE_MIN/TEXT_SIZE_MAX (and DEFAULT_TEXT_SIZE) into the description strings so the ranges have a single source of truth",
+          "low/testing test/tool-surface.test.ts:1 — tsconfig.json includes only 'src', so the spec's `npx tsc --noEmit` validation command never typechecks the new test files (shim.ts, tool-surface.test.ts); type errors there would only surface via vitest's transpile-only runs → Add the test directory to typechecking (e.g. include 'test' or a tsconfig.test.json referenced from the validation step)",
+          "low/spec-deviation src/webmcp/tools.ts:toolDefs — spec prose says '14 WebMCP tools' but its own tool table lists 15 names (the '(14 total)' arithmetic is off); the implementation registers all 15 listed tools and the suite keeps the contract-pinned `tools.size >= 14` assertion plus all 15 names → No action required; note the count discrepancy originates in the spec, not the code"
+        ],
+        "warnings": [],
+        "reviewCycles": 1
+      },
+      {
+        "title": "Polish and ship",
+        "result": "PASS",
+        "reviewStatus": "passed",
+        "commitHash": "5df797e7ec4b0c5c8568d57dfd28ffbce7131fd6",
+        "summary": "Implemented Phase 4 (Polish and Ship): full a11y pass (skip link, canvas role=img with aria-label synced from the exported summarize(), aria-hidden upper-canvas/args-JSON, feed announces summary lines, focusable object-list rows with focus restoration, toolbar focus rescue), gallery-dark theme rewrite with tokens/focus rings/reduced-motion, LICENSE/README/SUBMISSION.md/og.png (1200×630 scripted headless-Chrome shot of the production build) and package.json repository field; all five spec validation commands pass and the full vitest suite is green. Deploy and gh repo create were deferred to the post-review/commit stages (publishing unreviewed, uncommitted state would contradict the review gate) and are documented with exact commands in implementation-notes-phase-4.html; the curl contract check passes against the current live deployment. — High-quality phase: the a11y pass is thorough and honest (aria-live feed with visual-only args, focus restoration across re-renders, undo/redo focus handoff, canvas aria-label from the shared summarizer), the theme is clean and token-based, and README/SUBMISSION/LICENSE/package.json track the loopmate pattern files closely — including accurate line-number deep links and a correct 15-tool table backed by the pinned test. Only one medium (ambiguous 'Remove' button names in the object list) and four lows; nothing blocks commit. Ship-mechanics steps (deploy, gh repo create, live-URL checks) are process items outside the diff and still need the builder's validation-command run.",
+        "findings": [
+          "medium/spec-deviation src/ui/objectlist.ts:86 — Every caption row's remove button has the bare accessible name 'Remove'; with multiple captions a screen-reader user tabbing or listing controls hears identical 'Remove' buttons with no indication of which caption each deletes, which undercuts the spec's descriptive-label intent ('button: remove' in row context) for the a11y-thesis entry → Set remove.setAttribute('aria-label', `Remove ${t.id}`) (or include the caption text) so each button is uniquely named",
+          "low/logic index.html:11 — <meta name=\"theme-color\" content=\"#111318\"> still carries the pre-theme Phase 2 background while the new theme's --bg is #16181d, so browser chrome tint no longer matches the page → Update theme-color to #16181d to match styles.css --bg",
+          "low/spec-deviation src/styles.css:78 — The :focus-visible ring selector covers [tabindex='0'] but not the h2[tabindex=\"-1\"] fallback focus target in objectlist.ts; when the last caption is removed via keyboard, focus lands on the 'Scene objects' heading with no visible focus indicator, against the spec's 'visible focus rings' requirement → Add #object-list h2:focus-visible (or [tabindex='-1']:focus-visible) to the focus ring rule",
+          "low/spec-deviation README.md:60 — Spec's README order ends 'run/test/deploy' but the Run locally section lists only install/dev/test/build with no ./scripts/deploy.sh mention (loopmate's README also omits it, so pattern conformance is preserved) → Add a one-line deploy entry (./scripts/deploy.sh) to Run locally, or accept the loopmate pattern as-is",
+          "low/spec-deviation README.md:23 — Spec says 'the 14-tool table' but the README documents 15 tools; the code registers 15 and test/tool-surface.test.ts:79 pins all 15 by name, so the README matches reality and the spec's count is stale → Keep 15; no code change needed — note the stale count when updating the spec/contract"
+        ],
+        "warnings": [],
+        "reviewCycles": 1
+      }
+    ]
+  },
+  "verify": {
+    "line": "VERIFY speakeasel: commits=4/4 pass=5 fail=0 judgment=4",
+    "exitCode": 0
+  },
+  "notesFiles": [
+    "implementation-notes-phase-1.html",
+    "implementation-notes-phase-2.html",
+    "implementation-notes-phase-3.html",
+    "implementation-notes-phase-4.html"
+  ]
+}

@@ -1,0 +1,144 @@
+<!doctype html>
+<!--
+  Implementation-notes shell — copied VERBATIM by execute-spec on the first logged entry.
+  This file is the single owner of the implementation-notes format. Do not restate its
+  structure or styles elsewhere; change the format here and every future phase inherits it.
+  Copier substitutes: {N} (phase number, twice), {PROJECT}, {DATE}, {PHASE DESCRIPTION} —
+  then deletes the example entry and appends real ones inside <main class="doc-content">.
+-->
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Implementation Notes — Phase 2</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f3;
+        --fg: #191b1d;
+        --muted: #50555a;
+        --border: #dededf;
+        --accent: #2b46c7;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #131417;
+          --fg: #e9e9e4;
+          --muted: #a8aaa6;
+          --border: #2d3036;
+          --accent: #93a7ff;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0 auto;
+        max-width: 46rem;
+        padding: 2rem 1.25rem 4rem;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .doc-header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem; }
+      .doc-header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+      .doc-meta { margin: 0; color: var(--muted); font-size: 0.875rem; }
+      .note-entry { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+      .note-entry h3 { margin: 0 0 0.75rem; font-size: 1.05rem; color: var(--accent); }
+      .note-entry dl { margin: 0; }
+      .note-entry dt { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.75rem; }
+      .note-entry dt:first-child { margin-top: 0; }
+      .note-entry dd { margin: 0.15rem 0 0; }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.9em;
+        background: color-mix(in srgb, var(--fg) 8%, transparent);
+        padding: 0.1em 0.3em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc-header">
+      <h1>Implementation Notes — Phase 2</h1>
+      <p class="doc-meta">speakeasel · 2026-09-02 · The Editor: Fabric-free scene store + thin Fabric renderer + toolbar/object-list UI</p>
+    </header>
+    <main class="doc-content">
+      <section class="note-entry">
+        <h3>Scene store — <code>exportRequests</code> added to <code>SceneState</code>, excluded from history</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec's store API says <code>requestExport()</code> "bumps exportRequests counter; renderer downloads", but the <code>SceneState</code> interface sketch omits the field (flagged in the context map as a known gap).</dd>
+          <dt>Decision</dt>
+          <dd>Added <code>exportRequests: number</code> to state; the renderer diffs it against a <code>lastExportCount</code> and downloads on increase. Snapshots deliberately exclude it and <code>restore()</code> carries the live value forward — exporting is not undoable, and undo must never re-trigger a download.</dd>
+          <dt>Alternative</dt>
+          <dd>An out-of-band event/callback channel from scene to renderer — rejected: it would be the store's only non-state signal and break the "renderer is a pure projection of state" pattern.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Scene store — <code>endGesture()</code> added to close drag coalescing</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec requires <code>{fromRenderer: true}</code> moves to coalesce into one history entry per drag-release, but gives no mechanism to separate two consecutive drags of the same object (both would carry the same coalesce identity).</dd>
+          <dt>Decision</dt>
+          <dd>Additive <code>scene.endGesture()</code>: <code>fromRenderer</code> moves coalesce under a <code>move:{id}</code> key; the renderer calls <code>endGesture()</code> on Fabric's <code>object:modified</code> (release), so the next drag pushes a fresh snapshot. The frozen mutator contract is unchanged — this is a new method, not a rename.</dd>
+          <dt>Alternative</dt>
+          <dd>Only syncing on <code>object:modified</code> (one call per drag, no coalescing needed) — rejected: the object list would not update live mid-drag, weakening the "mirrors both directions" manual criterion.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Scene store — <code>loadImage</code> resets adjustments/rotation/crop, keeps captions</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec is silent on what happens to existing edits when a new image loads.</dd>
+          <dt>Decision</dt>
+          <dd>A new photo starts fresh (adjustments 0, rotation 0, crop null) — the old photo's crop rect has no meaning on a different image. Captions survive: they are percent-positioned and belong to the composition, not the photo. Undo restores the previous image together with its edits (one snapshot).</dd>
+          <dt>Alternative</dt>
+          <dd>Carrying all edit state across loads — rejected: a stale crop/rotation silently mangles the new photo, the "wrong region cropped" failure mode by another route.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Scene store — <code>rotate(degrees)</code> sets absolute rotation</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd><code>rotate(degrees) // normalize into 0..359</code> is ambiguous between relative ("rotate by") and absolute ("rotate to"). State holds a single normalized <code>rotation</code> field.</dd>
+          <dt>Decision</dt>
+          <dd>Absolute set, matching every other mutator (<code>setAdjustment</code>, <code>cropRect</code>) and giving agents an idempotent, predictable call. The toolbar's "Rotate 90°" button computes <code>(current + 90) % 360</code> itself.</dd>
+          <dt>Alternative</dt>
+          <dd>Relative rotation — rejected: non-idempotent for agents (retries double-rotate) and Phase 3 can trivially build relative on top of absolute, not vice versa.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Boot — sample auto-loads through <code>loadSample()</code></h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>Spec Data Model: default state has no image ("sample loadable"). Phase 1's boot drew the sample scene directly so the easel is never blank, and the live demo URL depends on visible content.</dd>
+          <dt>Decision</dt>
+          <dd><code>createInitialState()</code> keeps <code>image: null</code> per spec; <code>main.ts</code> calls <code>scene.loadSample()</code> at boot — the same one-code-path route as uploads. Cost: <code>canUndo</code> is true immediately (undo returns to a blank easel), which is honest history.</dd>
+          <dt>Alternative</dt>
+          <dd>Booting blank — rejected: regresses the deployed demo from Phase 1's never-blank easel. The sample source is injected via <code>registerSampleSource()</code> so the scene layer stays Fabric-free and Node-testable.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Renderer — display-space projection; oversize uploads re-encode as JPEG</h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>Spec suggests "crop maps to the canvas viewport"; it also mandates downscaling &gt;4096px images to ≤2048px "for canvas perf + dataURL size" without naming a format. Text size units are unspecified.</dd>
+          <dt>Decision</dt>
+          <dd>Kept the viewport identity and computed layout in display space instead: canvas dimensions take the visible (crop) region's aspect, the image object is scaled/offset so the crop fills the canvas, rotation spins the image around its center under the canvas-aligned window (crop math stays in unrotated image space, per the Failure Modes table). Texts live at percent-of-canvas with <code>fontSize</code> in display px; export uses <code>toDataURL({ multiplier: 1/dispScale })</code> to restore natural resolution. Downscaled oversize images re-encode as JPEG at 0.92 — a 2048px PNG dataURL of a photo would defeat the size motivation.</dd>
+          <dt>Alternative</dt>
+          <dd>Viewport-transform cropping with objects in image space — rejected: text font sizes would need image-relative scaling and the no-image case (texts on a blank 800×600 easel) would need a second coordinate system.</dd>
+        </dl>
+      </section>
+      <section class="note-entry">
+        <h3>Toolbar — adjustment sliders commit on <code>change</code>, not <code>input</code></h3>
+        <dl>
+          <dt>Context</dt>
+          <dd>The spec says every mutator pushes a history snapshot, with <code>fromRenderer</code> drags as the only coalesced exception. A slider drag fires dozens of <code>input</code> events.</dd>
+          <dt>Decision</dt>
+          <dd>Sliders call <code>scene.setAdjustment</code> on <code>change</code> (release): one history entry per gesture, keeping the 50-entry cap meaningful. The spec's experiment ("adjust brightness slider → visible change") still holds.</dd>
+          <dt>Alternative</dt>
+          <dd>Live preview via <code>input</code> events — rejected: floods history per the spec's own push rule; extending coalescing to adjustments would silently widen the spec's single stated exception.</dd>
+        </dl>
+      </section>
+    </main>
+  </body>
+</html>
