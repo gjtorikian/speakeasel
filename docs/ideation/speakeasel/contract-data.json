@@ -1,0 +1,213 @@
+{
+  "projectName": "Speakeasel",
+  "slug": "speakeasel",
+  "date": "2026-09-02",
+  "status": "Approved",
+  "approvalMode": "express",
+  "branch": "ideation/speakeasel",
+  "approvedOn": "2026-09-02",
+  "approvedBy": "Garen J. Torikian (express finish, MVP tier)",
+  "supersedes": null,
+  "gates": {
+    "dimensions": [
+      {
+        "key": "problem",
+        "label": "Problem Clarity",
+        "status": "ready",
+        "evidence": "Concrete two-sided problem: graphical editors are unusable for people who can't operate a mouse or see a canvas (alt-text ends at reading; no one can EDIT by conversation), and the WebMCP challenge judges reward entries where page-embedded tools are essential — a canvas whose scene graph is readable and editable through tools is a literal 'screen reader that can write back'."
+      },
+      {
+        "key": "goals",
+        "label": "Goal Definition",
+        "status": "ready",
+        "evidence": "Four measurable goals: second Devpost submission before 2026-09-03 13:00 PT, ≥14 WebMCP tools including a describe_canvas ↔ edit round-trip, a one-prompt multi-operation edit in ChatGPT desktop, and a <3min video demonstrating eyes-free editing."
+      },
+      {
+        "key": "criteria",
+        "label": "Success Criteria",
+        "status": "ready",
+        "evidence": "5 command-checkable criteria mirroring the verified Loopmate set (build, pinned vitest tool-surface suite, registerTool grep, curl -sf against the already-claimed speakeasel.netlify.app, LICENSE) plus 4 named judgment checks (filmed one-prompt edit, filmed describe-after-human-edit round-trip, video <3:00, Devpost receipt)."
+      },
+      {
+        "key": "scope",
+        "label": "Scope Boundaries",
+        "status": "ready",
+        "evidence": "MVP locked to Fabric.js-backed primitives (load/upload image, adjustments via built-in filters, crop, rotate, text objects, object move/remove, undo/redo, PNG export) with a ~15-tool surface; layers UI, drawing tools, mobile, accounts, AI image generation explicitly out; dynamic per-object tools and keyboard-shortcut overlay stretch."
+      },
+      {
+        "key": "consistency",
+        "label": "Consistency",
+        "status": "ready",
+        "evidence": "The known tension — a credible editor in ~24h — was surfaced with an explicit Execution-risk score (5/10) before the user chose this idea over the recommended alternative; mitigation (Fabric.js instead of from-scratch, generated sample scene instead of licensed assets, reuse of Loopmate's proven scaffold/deploy/test patterns) is recorded as decisions."
+      }
+    ]
+  },
+  "problem": [
+    "Graphical editing is the least accessible category of software: if you can't operate a mouse precisely or can't see the canvas, image editors are simply closed to you. Assistive tech stops at reading — alt text describes an image, but nothing lets a person hear what is on a canvas and then change it. The blind parent who wants to crop and caption a family photo has no path at all.",
+    "This is also a thesis entry for the WebMCP Challenge (deadline 2026-09-03 13:00 PT; judged on WebMCP Leverage, Execution, Potential Impact, Creativity): when an editor's full scene graph is exposed as readable AND writable page tools, the agent in the browser becomes the interface — 'a screen reader that can write back.' The photo also never leaves the tab: the agent operates local state through tools, which no server-side API can replicate. Second, substantially different submission alongside Loopmate (rules permit multiple entries)."
+  ],
+  "goals": [
+    "Submit a complete second Devpost entry — live URL, public OSS-licensed repo, <3min YouTube video with audio narration, description — before 2026-09-03 13:00 PT",
+    "Expose ≥14 WebMCP tools spanning read (get_canvas_state, describe_canvas) and write (load, adjust, crop, rotate, text, object ops, undo/redo, export) so a human-edit → agent-describe round-trip is demonstrable in one session",
+    "From a fresh page in ChatGPT desktop, one natural-language prompt ('crop it square, brighten the shadows, caption it Tahoe 2026') performs a multi-operation edit visible on canvas within one agent turn",
+    "Demo video under 3 minutes showing eyes-free editing: agent narrates the canvas via describe_canvas, performs edits on request, and correctly describes a change the human made by hand"
+  ],
+  "successCriteria": [
+    {
+      "criterion": "Production build succeeds",
+      "check": { "cmd": "cd /Users/gjtorikian/Developer/speakeasel && npm run build", "expect": "exits 0" }
+    },
+    {
+      "criterion": "Tool surface is real: ≥14 tools registered with valid JSON schemas, and an apply-edit → get_canvas_state round-trip reflects the edit (vitest with a modelContext shim running the REAL scene-state layer — the suite must assert the count, ajv-valid schemas, registration of get_canvas_state AND describe_canvas by name, and round-trip equality explicitly)",
+      "check": { "cmd": "cd /Users/gjtorikian/Developer/speakeasel && npx vitest run test/tool-surface.test.ts", "expect": "exits 0" }
+    },
+    {
+      "criterion": "Code demonstrates modelContext.registerTool (explicit Devpost rules requirement)",
+      "check": { "cmd": "grep -rq \"registerTool(\" /Users/gjtorikian/Developer/speakeasel/src", "expect": "exits 0 — matches the call shape, not a comment (grep exits 1 on no match, 2 if src/ is missing)" }
+    },
+    {
+      "criterion": "Live URL is up and public on Netlify",
+      "check": { "cmd": "curl -sf https://speakeasel.netlify.app/ | grep -qi \"<canvas\"", "expect": "exits 0 — anchors on the canvas element the build emits, so a placeholder or stale deploy fails (site pre-claimed, id 3d23f8c6-1483-47d1-87d4-10f91e1f7a11; team-only protection pre-disabled)" }
+    },
+    {
+      "criterion": "Repo carries an OSS license (submission requirement)",
+      "check": { "cmd": "test -f /Users/gjtorikian/Developer/speakeasel/LICENSE", "expect": "exits 0" }
+    },
+    {
+      "criterion": "One-prompt edit: 'crop it square, brighten the shadows, caption it Tahoe 2026' in ChatGPT desktop performs all three operations visibly in one agent turn",
+      "check": { "judgment": "Garen runs the prompt in ChatGPT desktop's in-app browser against the live URL and captures it on video" }
+    },
+    {
+      "criterion": "Round-trip on camera: after the human drags the caption by hand, the agent's describe_canvas reply reflects the new position",
+      "check": { "judgment": "Garen performs the drag mid-conversation and confirms the agent's description; captured on video" }
+    },
+    {
+      "criterion": "Demo video is under 3:00, has audio narration, and is live on YouTube",
+      "check": { "judgment": "Garen verifies duration mechanically before upload (ffprobe -v error -show_entries format=duration -of csv=p=0 speakeasel.mp4 → <180) and checks audio narration before linking it" }
+    },
+    {
+      "criterion": "Devpost submission completed before 2026-09-03 13:00 PT with all four deliverables linked, as a second entry alongside Loopmate",
+      "check": { "judgment": "Garen confirms the second submission receipt on webmcp.devpost.com" }
+    }
+  ],
+  "scope": {
+    "mvp": [
+      { "item": "Fabric.js canvas hosting one background image + text/shape objects, with a generated sample scene (gradient + shapes) and drag-drop/file-upload image loading", "reason": "Fabric's object model, filters, and JSON serialization make a credible editor buildable in hours; generated sample avoids all asset licensing; upload keeps photos local to the tab" },
+      { "item": "Edit operations: brightness/contrast/saturation adjustments (Fabric filters), crop, rotate, add/edit/move/remove text objects, undo/redo history, PNG export", "reason": "The minimum operation set for a believable 'edit a photo by talking' demo, each mapping 1:1 to a tool; goal 3's demo prompt needs exactly these" },
+      { "item": "~14 WebMCP tools including get_canvas_state (scene graph JSON), describe_canvas (prose scene narration — the a11y thesis tool), and a statically registered undo that answers 'nothing to undo' when history is empty", "reason": "The judged artifact; describe_canvas is the manifesto ('a screen reader that can write back'); undo is static per critic review — dynamic lifecycle is stretch flex, not MVP machinery" },
+      { "item": "Tool-call activity feed panel (bounded, newest-first)", "reason": "Carried from Loopmate where it passed review: agent actions become legible on camera, and for this entry it doubles as visible evidence for sighted viewers of what the eyes-free user hears" },
+      { "item": "Accessible page shell: keyboard-operable chrome (toolbar, object-list panel, dialogs, focus states), ARIA labels/roles; the object-list panel mirrors the scene graph", "reason": "An a11y-framed entry with an inaccessible page would be judged a fraud; keyboard manipulation of canvas objects themselves is stretch — the thesis demo drives edits through the agent, not arrow keys" },
+      { "item": "Netlify deploy via REST script (site pre-claimed: speakeasel.netlify.app) + public GitHub repo with OSS license + README carrying the a11y thesis and tool walkthrough", "reason": "Hard submission requirements; deploy path proven on Loopmate" },
+      { "item": "Vitest suite (test/tool-surface.test.ts): modelContext shim + the REAL Fabric-free scene-state layer, covering registration count, ajv schema validity, edit→state round-trips, error paths", "reason": "Only mechanical verification path; the scene-state/renderer split means Node tests exercise the actual product logic, mirroring Loopmate's Tone-free store — never a behavioral fake" }
+    ],
+    "full": [
+      { "item": "Blur/grayscale/sepia adjustment tools", "reason": "Nice adjustment range, but no goal or demo prompt uses them — this tier is the defined cut line when the 24h execution risk lands" }
+    ],
+    "stretch": [
+      { "item": "Dynamic tool lifecycle via AbortSignal: per-object tools appear as objects are added; undo/redo registration tracks history state", "reason": "Deepest tool-lifecycle flex if hours remain after the video is filmable — the Loopmate living-registry concept, correctly tiered here per critic review" },
+      { "item": "Keyboard manipulation of canvas objects (arrow-key nudge, resize)", "reason": "Rounds out keyboard a11y beyond the chrome; the agent path covers the thesis without it" },
+      { "item": "readOnlyHint annotations on read tools", "reason": "Spec-literacy signal, minutes of work, ride-along with the registry" },
+      { "item": "Keyboard-shortcut overlay", "reason": "Rounds out the a11y story for sighted keyboard users" }
+    ],
+    "outOfScope": [
+      { "item": "Layers UI, brushes/drawing, selection lasso", "reason": "Editor-suite scope; the thesis needs operations an agent can name, not painting" },
+      { "item": "AI image generation or ML alt-text", "reason": "describe_canvas is deterministic from the scene graph; generation muddies the local-first story" },
+      { "item": "Accounts, cloud save, mobile layout", "reason": "Same reasoning as Loopmate: zero leverage value in the judging window" },
+      { "item": "Loopmate depth upgrades (living FX registry, declarative form, share-link)", "reason": "Explicitly traded away for this second entry; the living-registry concept moved here as the dynamic undo/per-object tools" }
+    ],
+    "future": [
+      "Real screen-reader interop testing (VoiceOver/NVDA) beyond ARIA correctness",
+      "SVG/vector export"
+    ]
+  },
+  "decisions": [
+    {
+      "decision": "Build a second, substantially different entry rather than replacing or deepening Loopmate",
+      "rejected": "Deepening Loopmate with the selected upgrades (living FX registry, declarative form tool, share-link); replacing Loopmate entirely",
+      "reason": "Devpost rules allow multiple submissions per entrant; Loopmate is finished and verified, so a second entry doubles top-10 shots at the cost of extra filming, while a replacement would gamble a done entry on a 24h build."
+    },
+    {
+      "decision": "A11y-framed image editor ('Speakeasel')",
+      "rejected": "Ask-your-data DuckDB-WASM workbench (recommended), form-hell killer",
+      "reason": "User chose the manifesto play with the Execution risk (5/10 in a 24h window) explicitly stated; impact narrative is the strongest of the three and lands with the Chrome judge."
+    },
+    {
+      "decision": "Fabric.js as the canvas engine",
+      "rejected": "From-scratch canvas editor; Konva; embedding a hosted editor",
+      "reason": "Fabric ships the object model, image filters, transforms, and JSON serialization (get_canvas_state nearly free) under MIT; from-scratch cannot reach credible in 24h, and a hosted editor breaks the local-first story."
+    },
+    {
+      "decision": "Generated sample scene instead of bundled photos",
+      "rejected": "CC0/stock photo assets",
+      "reason": "Zero licensing risk and zero asset pipeline; user uploads provide real photos at demo time, which also feeds the 'your photo never leaves the tab' line."
+    },
+    {
+      "decision": "Editor architecture split: a Fabric-free scene-state layer (tools + Node tests run the real thing) and a thin Fabric renderer (browser-only subscriber)",
+      "rejected": "Tools calling a canvas-manager interface backed by a behavioral fake in tests; tools importing Fabric directly",
+      "reason": "Critic review: a behavioral fake reimplements the editor and tests verify the fake, not the product. The scene/renderer split is the exact store/Tone division that passed review on Loopmate — Node tests exercise real product logic, the renderer just draws state."
+    },
+    {
+      "decision": "Undo registers statically in MVP; AbortSignal dynamic lifecycle is stretch",
+      "rejected": "Dynamic undo registration in MVP",
+      "reason": "Two critics flagged it: no goal requires lifecycle machinery, it's new unproven state-sync in a 24h build, and it muddies the ≥14-count assertion. Static undo answers 'nothing to undo' when history is empty."
+    },
+    {
+      "decision": "Blur/grayscale/sepia demoted to the Full tier as the defined cut line",
+      "rejected": "All six adjustments in MVP",
+      "reason": "Critic review: no goal or demo prompt uses them and the tool count survives without them — a 24h build needs a named droppable tier, not an empty one."
+    },
+    {
+      "decision": "Netlify site pre-claimed and protection pre-disabled at contract time",
+      "rejected": "Claiming the site during Phase 1",
+      "reason": "Loopmate learning applied: probe external dependencies before execution — the hostname is pinned in the curl criterion from the start and the free-tier team-only 401 cannot recur."
+    },
+    {
+      "decision": "Reuse Loopmate's proven patterns: dual-surface WebMCP adapter, REST zip-deploy script, shim-backed vitest suite, activity feed",
+      "rejected": "Fresh approaches per component",
+      "reason": "Every pattern was reviewed and verified green yesterday; reuse converts the 24h risk into mostly-known work."
+    }
+  ],
+  "execution": {
+    "strategy": "Sequential",
+    "phases": [
+      {
+        "title": "Walking skeleton",
+        "risk": "medium",
+        "blocking": true,
+        "specPath": "docs/ideation/speakeasel/spec-phase-1.md",
+        "notes": "FIRST action: npm install fabric + render the sample scene — probing the one new dependency through the WorkOS Socket firewall, the same external system that silently broke the Netlify CLI (already pre-probed green: fabric 7.4.0 installs and imports; specs target the v7 API). Then Vite+TS scaffold (Loopmate patterns), dual-surface adapter + one hello tool, REST deploy to the pre-claimed site via scripts/deploy.sh (prereq: token at ~/.netlify/token, already in place). Risk medium not high: every pipeline unknown was retired yesterday."
+      },
+      {
+        "title": "The editor",
+        "risk": "high",
+        "blocking": true,
+        "prereqs": ["Walking skeleton"],
+        "specPath": "docs/ideation/speakeasel/spec-phase-2.md",
+        "notes": "Canvas manager over Fabric: image load (upload/drag-drop/sample), filter adjustments, crop, rotate, text objects, object move/remove, undo/redo snapshots, PNG export; toolbar + object-list panel + keyboard operability. The credibility phase — where the 24h risk lives."
+      },
+      {
+        "title": "Tool surface",
+        "risk": "medium",
+        "blocking": true,
+        "prereqs": ["The editor"],
+        "specPath": "docs/ideation/speakeasel/spec-phase-3.md",
+        "notes": "~14 tools over the scene-state layer, describe_canvas prose narration, static undo, activity feed, shim vitest suite at the pinned path test/tool-surface.test.ts running the real scene layer. The Leverage criterion lives here."
+      },
+      {
+        "title": "Polish and ship",
+        "risk": "low",
+        "blocking": true,
+        "prereqs": ["Tool surface"],
+        "specPath": "docs/ideation/speakeasel/spec-phase-4.md",
+        "notes": "ARIA/keyboard a11y pass on the chrome, README manifesto + tool walkthrough, SUBMISSION.md (Devpost text + video script), LICENSE, OG tags (optional garnish), final deploy, create the public GitHub repo + push (gh is authed; publicness is a hard submission requirement), all cmd checks green."
+      },
+      {
+        "title": "Film and submit",
+        "kind": "gate",
+        "risk": "low",
+        "prereqs": ["Polish and ship"],
+        "notes": "Human checkpoint: film the <3min eyes-free editing video in ChatGPT desktop (describe → one-prompt edit → human-drag round-trip), upload to YouTube, submit as second Devpost entry before 2026-09-03 13:00 PT."
+      }
+    ]
+  }
+}
