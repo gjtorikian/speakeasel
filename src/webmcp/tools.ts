@@ -200,6 +200,11 @@ export function toolDefs(scene: Scene): ToolDef[] {
             `Provide exactly one of 'aspect' (${ASPECTS.join(', ')}) or 'rect' ({x, y, width, height} in percent of the unrotated image).`,
           );
         }
+        if (scene.getState().image === null) {
+          throw new Error(
+            'No image loaded. Load one first: load_sample_image, or ask the human to upload a photo.',
+          );
+        }
         if (aspect !== undefined) {
           scene.cropToAspect(aspect);
         } else {

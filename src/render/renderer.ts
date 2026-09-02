@@ -194,7 +194,10 @@ function syncObjectPosition(target: FabricObject | undefined, final: boolean): v
   if (!id) return;
   const xPct = (target.left / handles.canvas.getWidth()) * 100;
   const yPct = (target.top / handles.canvas.getHeight()) * 100;
-  suppressEcho = true;
+  // Suppress the echo only mid-drag: the release sync must re-project so a
+  // drag past the canvas edge snaps the object to the clamped scene position
+  // (otherwise canvas and object list disagree until an unrelated mutation).
+  suppressEcho = !final;
   try {
     scene.moveObject(id, xPct, yPct, { fromRenderer: true });
   } catch (err) {
