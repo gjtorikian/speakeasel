@@ -6,6 +6,8 @@ export interface ToolDef {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /** Optional MCP tool annotations (e.g. { readOnlyHint: true }); clients that reject the field get the tool re-registered without it. */
+  annotations?: Record<string, unknown>;
   execute(args: unknown): Promise<ToolResponse>;
 }
 
