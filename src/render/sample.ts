@@ -1,23 +1,31 @@
-import { Canvas, Circle, Ellipse, FabricText, Gradient, Rect } from 'fabric';
+import { Circle, Ellipse, FabricText, Gradient, Rect, StaticCanvas } from 'fabric';
+
+export const SAMPLE_WIDTH = 800;
+export const SAMPLE_HEIGHT = 600;
+
+let cached: string | null = null;
 
 /**
- * Mount a Fabric canvas on the given element and draw the generated sample
- * scene (gradient sky, sun, two hills, a title) so the easel is never blank.
+ * Render the generated sample scene (gradient sky, sun, two hills, a title)
+ * ONCE on a detached offscreen canvas — never on #easel, which the renderer
+ * owns (Fabric throws on re-initializing an already-wrapped element) — and
+ * return it as a PNG dataURL. "Load sample" then flows through the exact
+ * same scene.loadImage path as uploads: one code path, and Fabric filters
+ * apply to the sample identically.
  * All shapes are generated — no stock photos, zero licensing (per contract).
- * This doubles as the Fabric v7 smoke test for the walking skeleton.
  */
-export function drawSampleScene(el: HTMLCanvasElement): Canvas {
-  const width = 800;
-  const height = 600;
-  const canvas = new Canvas(el, { width, height });
+export function sampleImageDataURL(): string {
+  if (cached) return cached;
+
+  const width = SAMPLE_WIDTH;
+  const height = SAMPLE_HEIGHT;
+  const canvas = new StaticCanvas(document.createElement('canvas'), { width, height });
 
   const sky = new Rect({
     left: 0,
     top: 0,
     width,
     height,
-    selectable: false,
-    evented: false,
     fill: new Gradient({
       type: 'linear',
       gradientUnits: 'pixels',
@@ -63,5 +71,7 @@ export function drawSampleScene(el: HTMLCanvasElement): Canvas {
 
   canvas.add(sky, sun, backHill, frontHill, title);
   canvas.renderAll();
-  return canvas;
+  cached = canvas.toDataURL({ format: 'png', multiplier: 1 });
+  void canvas.dispose();
+  return cached;
 }

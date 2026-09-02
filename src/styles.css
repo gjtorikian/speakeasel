@@ -1,0 +1,126 @@
+/* Functional layout for Phase 2 — dark polish lands in Phase 4.
+   Migrated from the former index.html <style> block (body/#easel/#webmcp-banner)
+   so nothing is defined twice. */
+
+body {
+  margin: 0 auto;
+  max-width: 60rem;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  background: #111318;
+  color: #e2e8f0;
+}
+
+#easel {
+  border: 1px solid #2d3748;
+  border-radius: 4px;
+  max-width: 100%;
+}
+
+#webmcp-banner {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #975a16;
+  border-radius: 4px;
+  background: #2d2006;
+  color: #fbd38d;
+}
+
+#editor-message {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #9b2c2c;
+  border-radius: 4px;
+  background: #3b1d1d;
+  color: #feb2b2;
+}
+
+/* --- Toolbar --- */
+
+#toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  padding-right: 1rem;
+  border-right: 1px solid #2d3748;
+}
+
+.toolbar-group:last-child {
+  border-right: none;
+}
+
+#toolbar button,
+#object-list button {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  background: #1a202c;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+
+#toolbar button:hover:not(:disabled),
+#object-list button:hover {
+  background: #2d3748;
+}
+
+#toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#toolbar .slider {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+#toolbar input[type='range'] {
+  width: 6.5rem;
+}
+
+#toolbar input[type='text'] {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  background: #1a202c;
+  color: #e2e8f0;
+  font: inherit;
+}
+
+/* --- Object list --- */
+
+#object-list {
+  margin: 0.75rem 0;
+}
+
+#object-list h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#object-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#object-list li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #2d3748;
+  font-size: 0.9rem;
+}

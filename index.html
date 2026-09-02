@@ -23,35 +23,15 @@
       name="twitter:description"
       content="A canvas image editor you and your AI agent operate together over WebMCP."
     />
-    <style>
-      body {
-        margin: 0 auto;
-        max-width: 60rem;
-        padding: 1rem;
-        font-family: system-ui, sans-serif;
-        background: #111318;
-        color: #e2e8f0;
-      }
-      #easel {
-        border: 1px solid #2d3748;
-        border-radius: 4px;
-        max-width: 100%;
-      }
-      #webmcp-banner {
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #975a16;
-        border-radius: 4px;
-        background: #2d2006;
-        color: #fbd38d;
-      }
-    </style>
   </head>
   <body>
     <div id="app">
       <h1>Speakeasel</h1>
       <p class="tagline">Agent + human image easel.</p>
       <p id="webmcp-banner" hidden>WebMCP not available in this browser.</p>
-      <section id="toolbar" aria-label="editing toolbar"></section>
+      <p id="editor-message" role="status" aria-live="polite" hidden></p>
+      <input id="file-input" type="file" accept="image/*" aria-label="Upload image" hidden />
+      <section id="toolbar" role="toolbar" aria-label="editing toolbar"></section>
       <canvas id="easel" width="800" height="600"></canvas>
       <section id="object-list" aria-label="scene objects"></section>
       <section id="activity" aria-label="agent tool-call activity"></section>

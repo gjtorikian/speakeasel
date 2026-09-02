@@ -1,11 +1,39 @@
-import { drawSampleScene } from './render/sample';
+import './styles.css';
+import { renderer } from './render/renderer';
+import { SAMPLE_HEIGHT, SAMPLE_WIDTH, sampleImageDataURL } from './render/sample';
+import { registerSampleSource, scene } from './scene/scene';
+import { initObjectList } from './ui/objectlist';
+import { initToolbar } from './ui/toolbar';
 import { getModelContext } from './webmcp/adapter';
 import type { ModelContext, ToolResponse } from './webmcp/adapter';
 
-// --- Boot: mount the easel first — the page works with or without WebMCP ---
+// --- Boot: scene → renderer → UI first — the page works with or without WebMCP ---
+
+registerSampleSource(() => ({
+  name: 'sample.png',
+  dataURL: sampleImageDataURL(),
+  width: SAMPLE_WIDTH,
+  height: SAMPLE_HEIGHT,
+}));
 
 const easel = document.querySelector<HTMLCanvasElement>('#easel')!;
-drawSampleScene(easel);
+renderer.init(easel);
+initToolbar(document.querySelector<HTMLElement>('#toolbar')!);
+initObjectList(document.querySelector<HTMLElement>('#object-list')!);
+
+// Keep the easel never blank: boot loads the generated sample through the
+// same scene.loadImage path uploads take (one code path — filters and crop
+// apply to the sample identically).
+if (!scene.getState().image) scene.loadSample();
+
+// Expose the store for DevTools auditioning: `scene.addText('hello')` updates
+// canvas + object list without a reload — the Phase 3 agent path, by hand.
+declare global {
+  interface Window {
+    scene: typeof scene;
+  }
+}
+window.scene = scene;
 
 // --- WebMCP tool registration ---
 
